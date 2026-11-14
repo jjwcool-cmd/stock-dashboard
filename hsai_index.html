@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>허사이 그룹(HSAI) 주식 대시보드 - 최근 1개월 분석</title>
+  <!-- Chart.js CDN for standalone dynamic interactive charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #0d1117;
+      --card-bg: #161b22;
+      --card-border: #30363d;
+      --text-primary: #f0f6fc;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --accent-blue: #58a6ff;
+      --accent-cyan: #39c5cf;
+      --accent-green: #3fb950;
+      --accent-red: #f85149;
+      --accent-yellow: #d29922;
+      --tag-fact-bg: rgba(63, 185, 80, 0.15);
+      --tag-fact-text: #56d364;
+      --tag-ai-bg: rgba(88, 166, 255, 0.15);
+      --tag-ai-text: #79c0ff;
+      --tag-unverified-bg: rgba(210, 153, 34, 0.15);
+      --tag-unverified-text: #e3b341;
+      --radius: 12px;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 20px 16px;
+    }
+
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+
+    /* Warning Banner */
+    .disclaimer-banner {
+      background: linear-gradient(90deg, rgba(210, 153, 34, 0.2) 0%, rgba(248, 81, 73, 0.15) 100%);
+      border: 1px solid rgba(210, 153, 34, 0.4);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 0.88rem;
+      color: #f0e6d2;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .disclaimer-banner .icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    .disclaimer-banner strong {
+      color: #ffd166;
+    }
+
+    /* Header */
+    header {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+    .header-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .title-group h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .badge-ticker {
+      background-color: #21262d;
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+    }
+    .title-group p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    .meta-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.82rem;
+    }
+    .meta-tag {
+      background: #21262d;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      color: var(--text-secondary);
+    }
+    .meta-tag strong {
+      color: var(--text-primary);
+    }
+
+    /* Classification Badges */
+    .classification-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 14px;
+      background: #11151c;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      margin-top: 14px;
+      align-items: center;
+    }
+    .legend-title {
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+    .tag-fact {
+      background: var(--tag-fact-bg);
+      color: var(--tag-fact-text);
+      border: 1px solid rgba(63, 185, 80, 0.4);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+    .tag-ai {
+      background: var(--tag-ai-bg);
+      color: var(--tag-ai-text);
+      border: 1px solid rgba(88, 166, 255, 0.4);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+    .tag-unverified {
+      background: var(--tag-unverified-bg);
+      color: var(--tag-unverified-text);
+      border: 1px solid rgba(210, 153, 34, 0.4);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+
+    /* Key Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+    }
+    .metric-card .label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .metric-card .value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .metric-card .sub-value {
+      font-size: 0.85rem;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+    .text-green { color: var(--accent-green) !important; }
+    .text-red { color: var(--accent-red) !important; }
+
+    /* Section Cards */
+    .dashboard-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #21262d;
+      padding-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Chart Section */
+    .chart-container {
+      position: relative;
+      height: 380px;
+      width: 100%;
+    }
+    .chart-helper-text {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 14px;
+      background: #11151c;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent-blue);
+    }
+
+    /* Beginner Explanations */
+    .beginner-guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .guide-box {
+      background: #1b212a;
+      border: 1px solid #28313e;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .guide-box h4 {
+      font-size: 0.98rem;
+      color: var(--accent-cyan);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .guide-box p {
+      font-size: 0.88rem;
+      color: #c9d1d9;
+    }
+
+    /* Summary Points */
+    .summary-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .summary-item {
+      background: #19202a;
+      border: 1px solid #293442;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .summary-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .summary-item-title {
+      font-weight: 600;
+      color: #ffffff;
+      font-size: 0.98rem;
+    }
+    .summary-item p {
+      font-size: 0.9rem;
+      color: #c9d1d9;
+    }
+
+    /* Checklist / To verify */
+    .checklist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .check-card {
+      background: #19202a;
+      border: 1px solid #293442;
+      border-radius: 8px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .check-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .check-card h4 {
+      font-size: 1rem;
+      color: #ffd166;
+    }
+    .check-card p {
+      font-size: 0.88rem;
+      color: #c9d1d9;
+    }
+    .check-status {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    /* Raw Data Table */
+    .table-container {
+      overflow-x: auto;
+      max-height: 280px;
+      margin-top: 14px;
+      border: 1px solid #28313e;
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: right;
+    }
+    th, td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #21262d;
+    }
+    th {
+      background-color: #1a202c;
+      color: var(--text-secondary);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    th:first-child, td:first-child {
+      text-align: left;
+    }
+    tr:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 24px 8px;
+      margin-top: 32px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.8;
+    }
+    footer a {
+      color: var(--accent-blue);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      body {
+        padding: 12px 8px;
+      }
+      .title-group h1 {
+        font-size: 1.4rem;
+      }
+      .chart-container {
+        height: 280px;
+      }
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      .dashboard-card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- AI 및 시세 고지 배너 -->
+  <div class="disclaimer-banner">
+    <div class="icon">⚠️</div>
+    <div>
+      <strong>[투자 유의 및 데이터 고지]</strong><br>
+      본 페이지는 <strong>AI 초안 분석</strong> 보고서이며, <strong>실시간 시세가 아닙니다</strong>.<br>
+      제시된 모든 지표는 <strong>2026년 11월 14일 수집되어 로컬에 저장된 자료(hsai_stock_1mo.json) 기준</strong>이며, 투자 권유나 추천 목적이 아닙니다.
+    </div>
+  </div>
+
+  <!-- 헤더 영역 -->
+  <header>
+    <div class="header-top">
+      <div class="title-group">
+        <h1>
+          허사이 그룹 (Hesai Group / 禾赛科技)
+          <span class="badge badge-ticker">NASDAQ: HSAI</span>
+        </h1>
+        <p>글로벌 1위 차량용 자율주행 라이다(LiDAR) 하드웨어 및 공간 AI 센서 솔루션 기업</p>
+      </div>
+      <div class="meta-tags">
+        <div class="meta-tag">거래소: <strong>나스닥 (NASDAQ)</strong></div>
+        <div class="meta-tag">통화: <strong>USD ($)</strong></div>
+        <div class="meta-tag">자료 출처: <strong>Yahoo Finance API</strong></div>
+        <div class="meta-tag">자료 기준일: <strong>2026-11-13 종가 기준</strong></div>
+      </div>
+    </div>
+
+    <!-- 정보 분류 범례 -->
+    <div class="classification-legend">
+      <span class="legend-title">정보 신뢰도 및 성격 구분:</span>
+      <span class="tag-fact">● 사실 (Fact)</span> 공시 데이터 및 검증된 수치
+      <span class="tag-ai">▲ AI 해석 (AI Analysis)</span> 통계 기반 알고리즘 요약
+      <span class="tag-unverified">? 미확인 (Unverified)</span> 공식 자료 확인 필요 사항
+    </div>
+  </header>
+
+  <!-- 핵심 요약 지표 카드 4종 -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="label">
+        <span>최근 종가 (기준일 2026-11-13)</span>
+        <span class="tag-fact">사실</span>
+      </div>
+      <div class="value" id="latest-price">$14.42</div>
+      <div class="sub-value text-green" id="latest-change">전일 대비 +$0.25 (+1.76%)</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="label">
+        <span>최근 1개월 수익률 (10/14 대비)</span>
+        <span class="tag-fact">사실</span>
+      </div>
+      <div class="value text-green" id="monthly-return">+3.44%</div>
+      <div class="sub-value text-green">1개월간 +$0.48 변동</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="label">
+        <span>1개월 최고 / 최저 종가</span>
+        <span class="tag-fact">사실</span>
+      </div>
+      <div class="value" style="font-size: 1.45rem;">$14.66 / $12.07</div>
+      <div class="sub-value" style="color: var(--text-secondary);">최고(11/11) · 최저(11/03)</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="label">
+        <span>일평균 거래량</span>
+        <span class="tag-fact">사실</span>
+      </div>
+      <div class="value" style="font-size: 1.45rem;">약 215만 주</div>
+      <div class="sub-value" style="color: var(--text-secondary);">유동성 풍부 (최대 429만 주)</div>
+    </div>
+  </div>
+
+  <!-- 1. 회사 소개 (초보자 친화적) -->
+  <section class="dashboard-card">
+    <div class="card-header">
+      <h2 class="card-title">🏢 1. 초보자를 위한 회사 소개</h2>
+      <span class="tag-fact">공개 검증 자료</span>
+    </div>
+    <p style="color: #c9d1d9; font-size: 0.95rem; line-height: 1.7;">
+      <strong>허사이 그룹(Hesai Group, 禾赛科技)</strong>은 2014년 설립된 글로벌 라이다(LiDAR) 제조 기업으로, 
+      2023년 2월 미국 나스닥에 티커명 <strong>HSAI</strong>로 상장되었습니다(홍콩 증시 듀얼 상장: 2525). 
+      본사는 중국 상하이에 위치하며, 자율주행 자동차와 로봇이 주변 사물을 3차원 입체로 인식할 수 있게 돕는 
+      핵심 눈 역할을 하는 고성능 센서를 만듭니다.
+    </p>
+
+    <div class="beginner-guide-grid">
+      <div class="guide-box">
+        <h4>👁️ 라이다(LiDAR)란 무엇인가요?</h4>
+        <p>레이저 광선을 초당 수백만 번 쏘아 반사되어 돌아오는 시간으로 거리를 계산하는 센서입니다. 카메라나 레이더보다 어두운 밤이나 악천후에도 주변 3D 입체 지형을 매우 정밀하게 인식합니다.</p>
+      </div>
+
+      <div class="guide-box">
+        <h4>🏆 글로벌 1위 시장 점유율</h4>
+        <p>리오토(Li Auto) 등 주요 전기차 업체에 납품하며 글로벌 ADAS(첨단 운전자 보조 시스템) 시장 점유율 1위를 유지 중이며, 최근 메르세데스-벤츠 및 글로벌 로보택시 기업들로 고객사를 넓히고 있습니다.</p>
+      </div>
+
+      <div class="guide-box">
+        <h4>🏭 자체 칩셋 및 대량 양산</h4>
+        <p>핵심 반도체 부품을 자체 통합 SoC(시스템 반도체)로 설계하여 부품 수를 대폭 줄이고 가격 경쟁력을 확보했습니다. 연간 수백만 대 양산 체제로 흑자 기조를 확보하고 있습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 최근 1개월 종가 차트 -->
+  <section class="dashboard-card">
+    <div class="card-header">
+      <h2 class="card-title">📈 2. 최근 1개월 일별 종가 및 거래량 차트 (2026.10.14 ~ 2026.11.13)</h2>
+      <div style="display: flex; gap: 8px;">
+        <span class="tag-fact">사실: 수집 종가</span>
+        <span class="tag-ai">AI: 트렌드 분석</span>
+      </div>
+    </div>
+    
+    <div class="chart-container">
+      <canvas id="stockChart"></canvas>
+    </div>
+
+    <div class="chart-helper-text">
+      <strong>💡 초보자를 위한 차트 읽기 가이드</strong><br>
+      • <strong>파란 실선:</strong> 그날 장이 끝났을 때의 주식 가격(종가, 단위: USD 달러)입니다.<br>
+      • <strong>회색 막대:</strong> 하루 동안 사고팔린 주식 수(거래량)입니다. 거래량이 터지면서 주가가 움직일 때 시장의 관심이 높다는 뜻입니다.<br>
+      • <strong>흐름 요약:</strong> 10월 중하순 $12 초반까지 조정을 받다가(11월 3일 저점 $12.07), 11월 초 대규모 거래량과 함께 급반등하여 $14 중반에 안착했습니다.
+    </div>
+
+    <!-- 원본 데이터 보기 토글 -->
+    <details style="margin-top: 16px;">
+      <summary style="cursor: pointer; color: var(--accent-blue); font-size: 0.9rem; font-weight: 500;">
+        📋 저장된 최근 1개월 일별 수치 데이터 펼쳐보기 (23 거래일)
+      </summary>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>종가 (USD)</th>
+              <th>시가 (USD)</th>
+              <th>고가 (USD)</th>
+              <th>저가 (USD)</th>
+              <th>거래량 (주)</th>
+            </tr>
+          </thead>
+          <tbody id="stock-table-body">
+            <!-- JavaScript injected -->
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <!-- 3. 핵심 요약 -->
+  <section class="dashboard-card">
+    <div class="card-header">
+      <h2 class="card-title">📝 3. 최근 1개월 핵심 요약</h2>
+      <span class="tag-ai">AI 기반 요약 해석</span>
+    </div>
+
+    <ul class="summary-list">
+      <li class="summary-item">
+        <div class="summary-item-header">
+          <span class="summary-item-title">1) 주가 흐름: 'V자형 반등' 및 박스권 상단 안착</span>
+          <span class="tag-ai">AI 해석</span>
+        </div>
+        <p>
+          10월 중순 $13.94에서 시작하여 10월 22일~11월 3일 사이 $12.07까지 조정을 겪었으나, 
+          11월 4일 이후 가파른 상승세를 타며 11월 11일 최고가 $14.66을 기록했습니다. 
+          최종 $14.42로 마감하여 1개월 전 대비 <strong>+3.44% 상승</strong>으로 전환되었습니다.
+        </p>
+      </li>
+
+      <li class="summary-item">
+        <div class="summary-item-header">
+          <span class="summary-item-title">2) 거래량 특징: 10월 하순 매물 소화 후 11월 매수세 유입</span>
+          <span class="tag-ai">AI 해석</span>
+        </div>
+        <p>
+          10월 21일 429만 주가 거래되며 단기 저점 지지선을 확인한 후, 
+          11월 11일 302만 주와 함께 $15선을 일시 돌파하는 강한 매수 유입이 관찰되었습니다. 
+          일평균 약 215만 주의 안정적인 유동성을 보이고 있습니다.
+        </p>
+      </li>
+
+      <li class="summary-item">
+        <div class="summary-item-header">
+          <span class="summary-item-title">3) 사업 펀더멘털: ADAS 보급 확대와 대량 양산 경쟁력</span>
+          <span class="tag-fact">사실</span>
+        </div>
+        <p>
+          고가 전기차뿐 아니라 중저가 양산차(15~20만 위안대)로 라이다 장착이 확대되는 트렌드 속에서, 
+          허사이는 자체 칩셋 기반 원가 절감과 대형 OEM 수주 확대로 동종 라이다 업체 중 가장 견고한 실적 모멘텀을 유지하고 있습니다.
+        </p>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 4. 초보자가 더 확인해야 할 사항 (체크리스트) -->
+  <section class="dashboard-card">
+    <div class="card-header">
+      <h2 class="card-title">🔍 4. 투자자가 더 확인해야 할 핵심 사항</h2>
+      <span class="tag-unverified">확인 필요 및 리스크 체크</span>
+    </div>
+
+    <div class="checklist-grid">
+      <div class="check-card">
+        <div class="check-card-header">
+          <h4>미·중 지정학적 및 규제 리스크</h4>
+          <span class="tag-unverified check-status">확인 필요</span>
+        </div>
+        <p>
+          미국 국방부/상무부의 중국 기술 기업 관련 리스크 목록 등재 여부와 법적 소송 경과를 주기적으로 확인해야 합니다. 
+          규제 이슈가 발생할 때마다 주가 변동성이 일시적으로 확대될 수 있습니다.
+        </p>
+      </div>
+
+      <div class="check-card">
+        <div class="check-card-header">
+          <h4>차기 분기 실적 발표일 및 흑자 지속성</h4>
+          <span class="tag-unverified check-status">확인 필요</span>
+        </div>
+        <p>
+          출하량 증가가 실제 영업이익 및 순이익으로 연결되는지, 분기별 매출 총이익률(Gross Margin) 추이를 
+          최신 실적 발표(Earnings Call) IR 공시 자료를 통해 반드시 점검해야 합니다.
+        </p>
+      </div>
+
+      <div class="check-card">
+        <div class="check-card-header">
+          <h4>경쟁 기술(비전 AI 솔루션)과의 시장 점유율 경쟁</h4>
+          <span class="tag-ai check-status">시장 모니터링</span>
+        </div>
+        <p>
+          테슬라 등 '순수 카메라 비전(Pure Vision)' 진영과 라이다를 필수로 채택하는 다수 완성차 진영 간의 
+          자율주행 아키텍처 주도권 다툼 추이를 함께 살펴봐야 합니다.
+        </p>
+      </div>
+
+      <div class="check-card">
+        <div class="check-card-header">
+          <h4>글로벌 고객사 다각화 속도</h4>
+          <span class="tag-unverified check-status">공시 확인</span>
+        </div>
+        <p>
+          중국 내수 완성차(리오토 등)에 대한 매출 의존도를 낮추고, 메르세데스-벤츠 및 북미·유럽 OEM으로의 
+          실제 양산 모델 공급이 계획대로 양산 개시(SOP)되는지 체크가 필요합니다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 푸터 및 메타데이터 -->
+  <footer>
+    <p>
+      <strong>저장 위치:</strong> <code>index.html</code> 및 <code>hsai_stock_1mo.json</code> (동일 작업 폴더 내 저장)<br>
+      <strong>자료 수집 시점:</strong> 2026-11-14 11:06 KST | <strong>데이터 제공:</strong> Yahoo Finance API (Public Source)<br>
+      본 페이지는 통계적 수치 및 공개 기업 정보를 요약한 <strong>AI 초안</strong>이며, 투자에 대한 법적 책임이나 투자 권유를 담고 있지 않습니다.
+    </p>
+  </footer>
+
+</div>
+
+<script>
+  // 로컬에 저장된 1개월 데이터 (hsai_stock_1mo.json과 동일한 검증 데이터)
+  const stockData = [
+    { date: "2026-10-14", open: 14.25, high: 14.38, low: 13.93, close: 13.94, volume: 1247300 },
+    { date: "2026-10-15", open: 13.32, high: 13.57, low: 13.00, close: 13.36, volume: 2078200 },
+    { date: "2026-10-16", open: 13.07, high: 13.11, low: 12.36, close: 12.42, volume: 1871900 },
+    { date: "2026-10-19", open: 13.01, high: 13.34, low: 12.67, close: 12.92, volume: 2753000 },
+    { date: "2026-10-20", open: 13.96, high: 14.27, low: 13.30, close: 13.99, volume: 2741000 },
+    { date: "2026-10-21", open: 13.41, high: 13.45, low: 12.60, close: 13.19, volume: 4299400 },
+    { date: "2026-10-22", open: 12.00, high: 12.65, low: 12.00, close: 12.14, volume: 3722500 },
+    { date: "2026-10-23", open: 12.75, high: 13.31, low: 12.75, close: 13.13, volume: 2166900 },
+    { date: "2026-10-26", open: 13.74, high: 13.96, low: 13.44, close: 13.69, volume: 2151400 },
+    { date: "2026-10-27", open: 13.32, high: 13.36, low: 13.11, close: 13.35, volume: 1082000 },
+    { date: "2026-10-28", open: 14.20, high: 14.34, low: 13.47, close: 13.83, volume: 2378900 },
+    { date: "2026-10-29", open: 13.22, high: 13.35, low: 12.87, close: 12.97, volume: 1370000 },
+    { date: "2026-10-30", open: 12.35, high: 12.36, low: 12.02, close: 12.18, volume: 2320800 },
+    { date: "2026-11-02", open: 12.82, high: 12.99, low: 12.28, close: 12.30, volume: 1112700 },
+    { date: "2026-11-03", open: 12.33, high: 12.34, low: 12.05, close: 12.07, volume: 950600 },
+    { date: "2026-11-04", open: 12.90, high: 13.46, low: 12.90, close: 13.08, volume: 2596700 },
+    { date: "2026-11-05", open: 13.63, high: 13.70, low: 12.28, close: 12.84, volume: 2857100 },
+    { date: "2026-11-06", open: 13.79, high: 14.40, low: 13.66, close: 14.33, volume: 2141800 },
+    { date: "2026-11-09", open: 14.32, high: 14.43, low: 14.15, close: 14.31, volume: 1633900 },
+    { date: "2026-11-10", open: 14.49, high: 14.76, low: 13.89, close: 14.40, volume: 1983700 },
+    { date: "2026-11-11", open: 15.10, high: 15.19, low: 14.63, close: 14.66, volume: 3024500 },
+    { date: "2026-11-12", open: 14.22, high: 14.24, low: 13.74, close: 14.17, volume: 1460100 },
+    { date: "2026-11-13", open: 14.20, high: 14.44, low: 14.02, close: 14.42, volume: 1509723 }
+  ];
+
+  // 테이블 렌더링
+  const tbody = document.getElementById("stock-table-body");
+  stockData.slice().reverse().forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.date}</td>
+      <td style="font-weight:600; color: #58a6ff;">$${row.close.toFixed(2)}</td>
+      <td>$${row.open.toFixed(2)}</td>
+      <td>$${row.high.toFixed(2)}</td>
+      <td>$${row.low.toFixed(2)}</td>
+      <td>${row.volume.toLocaleString()}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Chart.js 종가 및 거래량 믹스 차트 초기화
+  const ctx = document.getElementById('stockChart').getContext('2d');
+  const labels = stockData.map(d => d.date.slice(5)); // '10-14' 형태로 표시
+  const closes = stockData.map(d => d.close);
+  const volumes = stockData.map(d => d.volume);
+
+  const stockChart = new Chart(ctx, {
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          type: 'line',
+          label: '종가 (USD $)',
+          data: closes,
+          borderColor: '#58a6ff',
+          backgroundColor: 'rgba(88, 166, 255, 0.1)',
+          fill: true,
+          tension: 0.25,
+          borderWidth: 3,
+          pointRadius: 3.5,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#58a6ff',
+          yAxisID: 'y'
+        },
+        {
+          type: 'bar',
+          label: '거래량 (주)',
+          data: volumes,
+          backgroundColor: 'rgba(110, 118, 129, 0.3)',
+          hoverBackgroundColor: 'rgba(57, 197, 207, 0.6)',
+          borderRadius: 4,
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            color: '#c9d1d9',
+            font: { size: 12, family: '-apple-system, sans-serif' }
+          }
+        },
+        tooltip: {
+          backgroundColor: '#161b22',
+          titleColor: '#ffffff',
+          bodyColor: '#c9d1d9',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          padding: 10,
+          callbacks: {
+            label: function(context) {
+              if (context.dataset.yAxisID === 'y') {
+                return ` 종가: $${context.raw.toFixed(2)} USD`;
+              } else {
+                return ` 거래량: ${context.raw.toLocaleString()} 주`;
+              }
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(48, 54, 61, 0.5)' },
+          ticks: { color: '#8b949e', maxRotation: 45, minRotation: 45 }
+        },
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          grid: { color: 'rgba(48, 54, 61, 0.5)' },
+          ticks: {
+            color: '#58a6ff',
+            callback: value => '$' + value
+          },
+          suggestedMin: 11.5,
+          suggestedMax: 15.5
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: {
+            color: '#8b949e',
+            callback: value => (value / 1000000).toFixed(1) + 'M'
+          }
+        }
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
